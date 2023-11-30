@@ -1,0 +1,4 @@
+FROM golang:latest
+
+ADD bin/aoc2023 /
+ENTRYPOINT ["/aoc2023", "run"]
