@@ -95,7 +95,8 @@ func ReadLines(r io.Reader) ([]string, error) {
 
     switch {
         case err == io.EOF:
-            return lines, nil
+			lines = append(lines, strings.TrimRightFunc(line, unicode.IsSpace))
+			return lines, nil
         case err != nil:
             return []string{}, err
         default:
