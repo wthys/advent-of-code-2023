@@ -2,3 +2,4 @@
 *.swo
 *.swp
 aoc.env
+.vscode/settings.json
