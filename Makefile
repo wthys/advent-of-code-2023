@@ -45,3 +45,6 @@ example: $(PROG) build-run
 
 example-bare: $(PROG)
 	@cat examples/day$(DAY).txt | $(PROG) run $(DAY)
+
+diy-run: $(PROG)
+	$(DOCKERRUN) $(DAY)
