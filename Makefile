@@ -6,7 +6,7 @@ PROG:=$(BIN_DIR)/$(NAME)
 GOFILES:=$(shell find src/ -type f -name "*.go")
 
 NOWDATE:=$(shell TZ="EST" date +%Y%m%d)
-NOWDAY:=$(shell TZ="EST" date +%d)
+NOWDAY:=$(shell TZ="EST" date '+%e')
 ENDDATE:=20231225
 DOCKERRUN=docker run --rm -i --env AOC_SESSION ${AOC_RUNOPTS} aoc2023:latest $(ELAPSEDOPTS)
 ifdef ELAPSED
@@ -36,6 +36,8 @@ run-bare: $(PROG)
 run-all: $(PROG)
 	@if test "$(NOWDATE)" -lt "$(ENDDATE)"; then for day in `seq $(NOWDAY)`; do $(PROG) input $$day | $(DOCKERRUN) $$day; done; else for day in `seq 25`; do $(PROG) input $$day | $(DOCKERRUN) $$day;done;fi
 
+today: $(PROG)
+	@$(PROG) input $(NOWDAY) | $(DOCKERRUN) $(NOWDAY)
 
 clean:
 	rm -f $(PROG)
