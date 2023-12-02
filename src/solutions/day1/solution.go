@@ -23,18 +23,20 @@ func extractNumber(input string, mapping map[string]int) int {
 	dig2 := 0
 	for key, value := range mapping {
 		frIdx := strings.Index(input, key)
-		if frIdx >= 0 {
-			index1 = min(frIdx, index1)
+		if frIdx >= 0 && frIdx < index1 {
+			index1 = frIdx
 			dig1 = value
 		}
 		laIdx := strings.LastIndex(input, key)
-		if laIdx >= 0 {
-			index2 = max(laIdx+len(key), index2)
+		if laIdx >= 0 && laIdx+len(key) > index2 {
+			index2 = laIdx + len(key)
 			dig2 = value
 		}
 	}
 
-	return 10*dig1 + dig2
+	number := 10*dig1 + dig2
+	// fmt.Printf("%v => %v\n", input, number)
+	return number
 }
 
 func (s solution) Part1(input []string) (string, error) {
