@@ -190,13 +190,15 @@ func (s solution) Part2(input []string) (string, error) {
 	for _, game := range games {
 		needed := map[Color]int{Red: 0, Blue: 0, Green: 0}
 		for _, pull := range game.pulls {
+            newNeeded := map[Color]int{}
 			for color, amount := range needed {
 				n, ok := pull.cubes[color]
 				if !ok {
 					n = 0
 				}
-				needed[color] = max(n, amount)
+				newNeeded[color] = max(n, amount)
 			}
+            needed = newNeeded
 		}
 
 		power := 1
