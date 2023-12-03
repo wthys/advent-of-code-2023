@@ -117,7 +117,7 @@ func TestPermutationDo(t *testing.T) {
 
 }
 
-func TestDo(t *testing.T) {
+func TestForEach(t *testing.T) {
 	array := []int{1, 2, 3}
 	check := map[int]bool{
 		1: false,
@@ -125,7 +125,7 @@ func TestDo(t *testing.T) {
 		3: false,
 	}
 
-	Do(array, func(value int) {
+	ForEach(array, func(value int) {
 		check[value] = true
 	})
 
@@ -136,7 +136,7 @@ func TestDo(t *testing.T) {
 	}
 }
 
-func TestDoWithError(t *testing.T) {
+func TestForEachError(t *testing.T) {
 	array := []int{1, 2, 3, 4, 5}
 	check := map[int]bool{
 		1: false,
@@ -146,7 +146,7 @@ func TestDoWithError(t *testing.T) {
 		5: false,
 	}
 
-	err := DoWithError(array, func(value int) error {
+	err := ForEachError(array, func(value int) error {
 		if value > 3 {
 			return fmt.Errorf("value %v is too large", value)
 		}
@@ -155,17 +155,17 @@ func TestDoWithError(t *testing.T) {
 	})
 
 	if err == nil {
-		t.Fatalf("DoWithError(%v, ...) should produce an error but none was seen", array)
+		t.Fatalf("ForEachError(%v, ...) should produce an error but none was seen", array)
 	}
 
 	for value, seen := range check {
 		if !seen && value <= 3 {
-			t.Fatalf("Do(%v, ...) should produce %v, but was not seen", array, value)
+			t.Fatalf("ForEachError(%v, ...) should produce %v, but was not seen", array, value)
 		}
 	}
 }
 
-func TestDoContinue(t *testing.T) {
+func TestForEachStopping(t *testing.T) {
 	array := []int{1, 2, 3, 4, 5}
 	check := map[int]bool{
 		1: false,
@@ -175,7 +175,7 @@ func TestDoContinue(t *testing.T) {
 		5: false,
 	}
 
-	continued := DoContinue(array, func(value int) bool {
+	stopped := ForEachStopping(array, func(value int) bool {
 		if value > 3 {
 			return false
 		}
@@ -183,13 +183,13 @@ func TestDoContinue(t *testing.T) {
 		return true
 	})
 
-	if continued {
-		t.Fatalf("DoContinue(%v, ...) should produce %v but was %v", array, false, continued)
+	if !stopped {
+		t.Fatalf("ForEachStopping(%v, ...) should produce %v but was %v", array, true, stopped)
 	}
 
 	for value, seen := range check {
 		if !seen && value <= 3 {
-			t.Fatalf("Do(%v, ...) should produce %v, but was not seen", array, value)
+			t.Fatalf("ForEachStopping(%v, ...) should produce %v, but was not seen", array, value)
 		}
 	}
 }

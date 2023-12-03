@@ -10,9 +10,9 @@ type Number interface {
 	constraints.Integer | constraints.Float
 }
 
-type Consumer[T any] func(T)
-type ConsumerWithError[T any] func(T) error
-type ContinueConsumer[T any] func(T) bool
+type ForEachFunction[T any] func(T)
+type ForEachErrorFunction[T any] func(T) error
+type ForEachStoppingFunction[T any] func(T) bool
 
 func Sign[T Number](val T) T {
 	if val == 0 {
@@ -133,15 +133,15 @@ func Min[T Number](values ...T) T {
 	return best
 }
 
-func Do[T any](values []T, consumer Consumer[T]) {
+func ForEach[T any](values []T, forEach ForEachFunction[T]) {
 	for _, value := range values {
-		consumer(value)
+		forEach(value)
 	}
 }
 
-func DoWithError[T any](values []T, consumer ConsumerWithError[T]) error {
+func ForEachError[T any](values []T, forEach ForEachErrorFunction[T]) error {
 	for _, value := range values {
-		err := consumer(value)
+		err := forEach(value)
 		if err != nil {
 			return err
 		}
@@ -149,11 +149,11 @@ func DoWithError[T any](values []T, consumer ConsumerWithError[T]) error {
 	return nil
 }
 
-func DoContinue[T any](values []T, consumer ContinueConsumer[T]) bool {
+func ForEachStopping[T any](values []T, forEach ForEachStoppingFunction[T]) bool {
 	for _, value := range values {
-		if !consumer(value) {
-			return false
+		if !forEach(value) {
+			return true
 		}
 	}
-	return true
+	return false
 }

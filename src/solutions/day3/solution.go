@@ -39,7 +39,7 @@ func (s solution) Part2(input []string) (string, error) {
 	partNumbers, parts := parseInput(input)
 
 	total := 0
-	parts.Apply(func(loc location.Location, part rune) {
+	parts.ForEach(func(loc location.Location, part rune) {
 		if part != rune('*') {
 			return
 		}
