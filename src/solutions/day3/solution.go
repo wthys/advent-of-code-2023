@@ -90,9 +90,8 @@ func findPartNumbers(partNumbers []PartNumber, loc location.Location) []PartNumb
 	}
 
 	numbers := []PartNumber{}
-	indices.Do(func(idx int) bool {
+	indices.ForEach(func(idx int) {
 		numbers = append(numbers, partNumbers[idx])
-		return true
 	})
 	return numbers
 }

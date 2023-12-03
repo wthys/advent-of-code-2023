@@ -1,110 +1,116 @@
 package set
 
 import (
-    "fmt"
-    "strings"
+	"fmt"
+	"strings"
 )
 
 type (
-    empty struct{}
+	empty struct{}
 
-    Set[T comparable] struct {
-        contents map[T]empty
-    }
+	Set[T comparable] struct {
+		contents map[T]empty
+	}
 
-    SetDoFunction[T comparable] func(value T) bool
+	ForEachFunction[T comparable]           func(value T)
+	ForEachStoppingFunction[T comparable]   func(value T) bool
+	MapFunction[T comparable, R comparable] func(value T) R
 )
 
 func New[T comparable](values ...T) *Set[T] {
-    set := Set[T]{map[T]empty{}}
-    for _, value := range values {
-        set.Add(value)
-    }
-    return &set
+	set := Set[T]{map[T]empty{}}
+	for _, value := range values {
+		set.Add(value)
+	}
+	return &set
 }
 
 func (s Set[T]) String() string {
-    str := strings.Builder{}
-    fmt.Fprint(&str, "<")
-    s.Do(func(value T) bool {
-        fmt.Fprintf(&str, " %v", value)
-        return true
-    })
-    fmt.Fprint(&str, " >")
-    return str.String()
+	str := strings.Builder{}
+	fmt.Fprint(&str, "<")
+	s.ForEach(func(value T) {
+		fmt.Fprintf(&str, " %v", value)
+	})
+	fmt.Fprint(&str, " >")
+	return str.String()
 }
 
 func (s Set[T]) Values() []T {
-    vals := []T{}
-    s.Do(func(value T) bool {
-        vals = append(vals, value)
-        return true
-    })
-    return vals
+	vals := []T{}
+	s.ForEach(func(value T) {
+		vals = append(vals, value)
+	})
+	return vals
 }
 
 func (s *Set[T]) Add(value T) *Set[T] {
-    (*s).contents[value] = empty{}
-    return s
+	(*s).contents[value] = empty{}
+	return s
 }
 
 func (s Set[T]) Has(value T) bool {
-    _, ok := s.contents[value]
-    return ok
+	_, ok := s.contents[value]
+	return ok
 }
 
 func (s Set[T]) Len() int {
-    return len(s.contents)
+	return len(s.contents)
 }
 
 func (s *Set[T]) Remove(value T) *Set[T] {
-    delete((*s).contents, value)
-    return s
+	delete((*s).contents, value)
+	return s
 }
 
 func (s Set[T]) Intersect(other *Set[T]) *Set[T] {
-    common := New[T]()
+	common := New[T]()
 
-    s.Do(func(value T) bool {
-        if other.Has(value) {
-            common.Add(value)
-        }
-        return true
-    })
+	s.ForEach(func(value T) {
+		if other.Has(value) {
+			common.Add(value)
+		}
+	})
 
-    return common
+	return common
 }
 
 func (s Set[T]) Union(other *Set[T]) *Set[T] {
-    union := New[T]()
-    adder := func(value T) bool {
-        union.Add(value)
-        return true
-    }
+	union := New[T]()
+	adder := func(value T) {
+		union.Add(value)
+	}
 
-    s.Do(adder)
-    other.Do(adder)
+	s.ForEach(adder)
+	other.ForEach(adder)
 
-    return union
+	return union
 }
 
 func (s Set[T]) Subtract(other *Set[T]) *Set[T] {
-    sub := New[T]()
+	sub := New[T]()
 
-    s.Do(func(value T) bool {
-        if !other.Has(value) {
-            sub.Add(value)
-        }
-        return true
-    })
+	s.ForEach(func(value T) {
+		if !other.Has(value) {
+			sub.Add(value)
+		}
+	})
 
-    return sub
+	return sub
 }
 
-func (s Set[T]) Do(doer SetDoFunction[T]) {
-    for value, _ := range s.contents {
-        if !doer(value) {
-            break
-        }
-    }
+// Iterates over all elements as long as the result of the forEach function is true.
+// Returns true when it was stopped early, false otherwise.
+func (s Set[T]) ForEachStopping(forEach ForEachStoppingFunction[T]) bool {
+	for value, _ := range s.contents {
+		if !forEach(value) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s Set[T]) ForEach(forEach ForEachFunction[T]) {
+	for value, _ := range s.contents {
+		forEach(value)
+	}
 }
