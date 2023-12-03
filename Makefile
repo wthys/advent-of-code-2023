@@ -13,7 +13,7 @@ ifdef ELAPSED
 ELAPSEDOPTS:=-e
 endif
 
-.PHONY: build run run-all clean example build-run run-bare example-bare all
+.PHONY: build run run-all clean example build-run run-bare example-bare all today diy-run
 
 all: build
 
