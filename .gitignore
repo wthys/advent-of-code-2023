@@ -3,3 +3,6 @@
 *.swp
 .vscode/settings.json
 .env
+inputs/day1.txt
+inputs/day2.txt
+inputs/day3.txt

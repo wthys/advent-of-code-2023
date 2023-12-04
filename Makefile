@@ -36,7 +36,7 @@ run-bare: $(PROG)
 run-all: $(PROG)
 	@if test "$(NOWDATE)" -lt "$(ENDDATE)"; then for day in `seq $(NOWDAY)`; do $(PROG) input $$day | $(DOCKERRUN) $$day; done; else for day in `seq 25`; do $(PROG) input $$day | $(DOCKERRUN) $$day;done;fi
 
-today: $(PROG)
+today: build-run $(PROG)
 	@$(PROG) input $(NOWDAY) | $(DOCKERRUN) $(NOWDAY)
 
 clean:
