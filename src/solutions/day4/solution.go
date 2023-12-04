@@ -27,14 +27,35 @@ func (s solution) Part1(input []string) (string, error) {
 
 	total := 0
 	for _, card := range cards {
-		// fmt.Printf("Card #%v => %v\n", card.id, card.Score())
 		total += card.Score()
 	}
 	return solver.Solved(total)
 }
 
 func (s solution) Part2(input []string) (string, error) {
-	return solver.NotImplemented()
+	cards, err := parseInput(input)
+	if err != nil {
+		return solver.Error(err)
+	}
+
+	cardsWon := map[int]int{}
+	for _, card := range cards {
+		cardsWon[card.id] = 1
+	}
+
+	total := len(cards)
+
+	for _, card := range cards {
+		copies, _ := cardsWon[card.id]
+
+		matches := card.Matches()
+		for i := 1; i <= matches; i++ {
+			cardsWon[card.id+i] += copies
+			total += copies
+		}
+	}
+
+	return solver.Solved(total)
 }
 
 type (
@@ -49,9 +70,12 @@ func (card Card) String() string {
 	return fmt.Sprintf("Card(id=%v, winning=%v, yours=%v)", card.id, card.winning, card.yours)
 }
 
+func (card Card) Matches() int {
+	return card.winning.Intersect(card.yours).Len()
+}
+
 func (card Card) Score() int {
-	matches := card.winning.Intersect(card.yours)
-	switch size := matches.Len(); size {
+	switch size := card.Matches(); size {
 	case 0:
 		return 0
 	case 1:
@@ -63,7 +87,7 @@ func (card Card) Score() int {
 
 func parseInput(input []string) ([]Card, error) {
 	cards := []Card{}
-	reCard := regexp.MustCompile("^.*([0-9]+):([^\\|]*)\\|(.*)$")
+	reCard := regexp.MustCompile("^[^0-9]*([0-9]+):([^\\|]*)\\|(.*)$")
 	reNum := regexp.MustCompile("[0-9]+")
 
 	for _, line := range input {
