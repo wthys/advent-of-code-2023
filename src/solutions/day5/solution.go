@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/wthys/advent-of-code-2023/solver"
+	"github.com/wthys/advent-of-code-2023/util/interval"
 )
 
 type solution struct{}
@@ -50,37 +51,25 @@ func (s solution) Part2(input []string) (string, error) {
 		return solver.Error(err)
 	}
 
-	firstLocation := 100000000000000000
-
-	prev := seeds[0]
-	for idx, val := range seeds[1:] {
-		if idx%2 == 0 {
-			fmt.Printf(" checking %v -> %v (%v)\n", prev, prev+val-1, val)
-			for i := 0; i < val; i++ {
-				seed := prev + i
-				reqs, err := mappers.Gather(seed)
-				if err != nil {
-					fmt.Println(err)
-					continue
-				}
-
-				locId, ok := reqs["location"]
-				if !ok {
-					fmt.Printf("seed %v does not have a location => %v\n", seed, reqs)
-					continue
-				}
-
-				firstLocation = min(firstLocation, locId)
-				if i%100 == 0 {
-					fmt.Printf("  checked up until #%v/%v     \r", i, seed)
-				}
-			}
-		}
-		prev = val
+	seedRanges := interval.Intervals{}
+	for idx := 0; idx < len(seeds); idx += 2 {
+		start := seeds[idx]
+		size := seeds[idx+1]
+		seedRanges = append(seedRanges, interval.New(start, start+size-1)).Compact()
 	}
-	fmt.Println()
+	
+	// Second attempt, runs in about 1min
+	for id := 0; true; id++ {
+		reqs, err := mappers.GatherReverse(id)
+		if err != nil {
+			continue
+		}
+		if seedRanges.Contains(reqs["seed"]) {
+			return solver.Solved(id)
+		}
+	}
 
-	return solver.Solved(firstLocation)
+	return solver.NotImplemented()
 }
 
 type (
@@ -100,29 +89,36 @@ type (
 	SeedRequirements map[string]int
 )
 
-func (m Mapper) Map(id int) int {
-	for _, maprange := range m.ranges {
-		newId, ok := maprange.Map(id)
-		if ok {
-			return newId
+func (m Mappers) GetFrom(from string) (Mapper, bool) {
+	for _, mapper := range m {
+		if mapper.from == from {
+			return mapper, true
 		}
 	}
-	return id
+	return Mapper{}, false
 }
 
-func (m MapRange) Map(id int) (int, bool) {
-	diff := id - m.source
-	if diff >= 0 && diff < m.size {
-		return m.target + diff, true
+func (m Mappers) GetTo(to string) (Mapper, bool) {
+	for _, mapper := range m {
+		if mapper.to == to {
+			return mapper, true
+		}
 	}
-	return 0, false
+	return Mapper{}, false
 }
 
 func (m Mappers) Resolve(from string, id int) (int, string, bool) {
-	for _, mapper := range m {
-		if mapper.from == from {
-			return mapper.Map(id), mapper.to, true
-		}
+	mapper, ok := m.GetFrom(from)
+	if ok {
+		return mapper.Map(id), mapper.to, true
+	}
+	return 0, "", false
+}
+
+func (m Mappers) ResolveReverse(to string, id int) (int, string, bool) {
+	mapper, ok := m.GetTo(to)
+	if ok {
+		return mapper.MapReverse(id), mapper.from, true
 	}
 	return 0, "", false
 }
@@ -144,6 +140,60 @@ func (m Mappers) Gather(seed int) (SeedRequirements, error) {
 	}
 
 	return reqs, nil
+}
+
+func (m Mappers) GatherReverse(location int) (SeedRequirements, error) {
+	reqs := SeedRequirements{"location": location}
+
+	to := "location"
+	id := location
+	for to != "seed" {
+		mapper, ok := m.GetTo(to)
+		if !ok {
+			return nil, fmt.Errorf("no mapper to %q", to)
+		}
+		id = mapper.MapReverse(id)
+		to = mapper.from
+		reqs[to] = id
+	}
+
+	return reqs, nil
+}
+
+func (m Mapper) Map(id int) int {
+	for _, maprange := range m.ranges {
+		newId, ok := maprange.Map(id)
+		if ok {
+			return newId
+		}
+	}
+	return id
+}
+
+func (m Mapper) MapReverse(id int) int {
+	for _, maprange := range m.ranges {
+		newId, ok := maprange.MapReverse(id)
+		if ok {
+			return newId
+		}
+	}
+	return id
+}
+
+func (m MapRange) Map(id int) (int, bool) {
+	diff := id - m.source
+	if diff >= 0 && diff < m.size {
+		return m.target + diff, true
+	}
+	return 0, false
+}
+
+func (m MapRange) MapReverse(id int) (int, bool) {
+	diff := id - m.target
+	if diff >= 0 && diff < m.size {
+		return m.source + diff, true
+	}
+	return 0, false
 }
 
 func parseInput(input []string) ([]int, Mappers, error) {
