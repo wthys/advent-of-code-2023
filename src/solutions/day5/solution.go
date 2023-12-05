@@ -78,6 +78,7 @@ func (s solution) Part2(input []string) (string, error) {
 		}
 		prev = val
 	}
+	fmt.Println()
 
 	return solver.Solved(firstLocation)
 }
