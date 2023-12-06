@@ -51,25 +51,66 @@ func (s solution) Part2(input []string) (string, error) {
 		return solver.Error(err)
 	}
 
-	seedRanges := interval.Intervals{}
+	outRanges := interval.Intervals{}
 	for idx := 0; idx < len(seeds); idx += 2 {
 		start := seeds[idx]
 		size := seeds[idx+1]
-		seedRanges = append(seedRanges, interval.New(start, start+size-1)).Compact()
+		outRanges = append(outRanges, interval.New(start, start+size-1)).Compact()
 	}
-	
-	// Second attempt, runs in about 1min
-	for id := 0; true; id++ {
-		reqs, err := mappers.GatherReverse(id)
-		if err != nil {
-			continue
+
+	// Third attempt
+	mapper, ok := mappers.GetFrom("seed")
+	for ok {
+		inRanges := interval.Intervals{}
+		leftOvers := append(interval.Intervals{}, outRanges...)
+		for _, inRange := range mapper.InRanges() {
+			newLeftOvers := interval.Intervals{}
+			for _, rng := range leftOvers {
+				cand := rng.Intersect(inRange)
+				if !cand.IsEmpty() {
+					inRanges = append(inRanges, cand)
+					rest := rng.Minus(inRange)
+					newLeftOvers = append(newLeftOvers, rest...)
+					if rng.IsEmpty() {
+						break
+					}
+				} else {
+					newLeftOvers = append(newLeftOvers, rng)
+				}
+			}
+			leftOvers = newLeftOvers
 		}
-		if seedRanges.Contains(reqs["seed"]) {
-			return solver.Solved(id)
+		inRanges = append(inRanges, leftOvers...)
+
+		outRanges = interval.Intervals{}
+		for _, inRange := range inRanges {
+			low := mapper.Map(inRange.Lower())
+			high := mapper.Map(inRange.Upper())
+			outRange := interval.New(low, high)
+			if !outRange.IsEmpty() {
+				outRanges = append(outRanges, outRange)
+			}
+		}
+
+		mapper, ok = mappers.GetFrom(mapper.to)
+	}
+
+	firstLocation := 0
+	firstSet := false
+	for _, outRange := range outRanges {
+		if !firstSet {
+			firstLocation = outRange.Lower()
+			firstSet = true
+		} else {
+			firstLocation = min(outRange.Lower(), firstLocation)
 		}
 	}
 
-	return solver.NotImplemented()
+	if !firstSet {
+		return solver.NotImplemented()
+	}
+
+	return solver.Solved(firstLocation)
 }
 
 type (
@@ -180,6 +221,18 @@ func (m Mapper) MapReverse(id int) int {
 	return id
 }
 
+func (m Mapper) InRanges() interval.Intervals {
+	ins := interval.Intervals{}
+	for _, maprange := range m.ranges {
+		ins = append(ins, maprange.InRange())
+	}
+	return ins
+}
+
+func (m Mapper) String() string {
+	return fmt.Sprintf("Mapper(%v -> %v, %v)", m.from, m.to, m.ranges)
+}
+
 func (m MapRange) Map(id int) (int, bool) {
 	diff := id - m.source
 	if diff >= 0 && diff < m.size {
@@ -194,6 +247,18 @@ func (m MapRange) MapReverse(id int) (int, bool) {
 		return m.source + diff, true
 	}
 	return 0, false
+}
+
+func (m MapRange) InRange() interval.Interval {
+	return interval.New(m.source, m.source+m.size-1)
+}
+
+func (m MapRange) OutRange() interval.Interval {
+	return interval.New(m.target, m.target+m.size-1)
+}
+
+func (m MapRange) String() string {
+	return fmt.Sprintf("MapRange(%v -> %v)", m.InRange(), m.OutRange())
 }
 
 func parseInput(input []string) ([]int, Mappers, error) {
