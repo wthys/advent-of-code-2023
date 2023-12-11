@@ -3,7 +3,9 @@ package day10
 import (
 	"testing"
 
+	"github.com/wthys/advent-of-code-2023/collections/set"
 	"github.com/wthys/advent-of-code-2023/location"
+	"github.com/wthys/advent-of-code-2023/util"
 )
 
 var UNKNOWN_STARTLOCATION = location.New(-1, -1)
@@ -74,45 +76,45 @@ func Test050_PipeLine_Merge(t *testing.T) {
 	}
 }
 
-func Test100_ParseInput_SimpleLoop(t *testing.T) {
-	input := []string{
-		"F7",
-		"LJ",
+func Test100_Pipe_NeejberLocs(t *testing.T) {
+	center := location.New(0, 0)
+	north := location.New(0, -1)
+	east := location.New(1, 0)
+	south := location.New(0, 1)
+	west := location.New(-1, 0)
+
+	dirs := map[Connection]location.Location{
+		NORTH: north,
+		EAST:  east,
+		WEST:  west,
+		SOUTH: south,
 	}
 
-	pipelines, startLocation := ParseInput(input)
+	for conn, expected := range dirs {
+		pipe := NewPipe(center, conn)
+		neejbers := pipe.NeejberLocs()
 
-	assertPipelines(t, 1, pipelines)
-	assertLocation(t, "startLocation", UNKNOWN_STARTLOCATION, startLocation)
-
-	if !pipelines[0].IsLoop() {
-		t.Fatalf("expected %v to be a loop, it is not", pipelines[0])
+		if len(neejbers) != 1 {
+			t.Fatalf("exptected 1 connection, got %v => %v", len(neejbers), neejbers)
+		}
+		assertLocation(t, "neejber", expected, neejbers[0])
 	}
-}
 
-func Test100_ParseInput_SinglePipe(t *testing.T) {
-	input := []string{"-"}
+	util.PermutationDo(2, (NORTH + EAST + SOUTH + WEST).Connections(), func(conns []Connection) {
+		conn := NONE
+		expected := set.New[location.Location]()
+		for _, c := range conns {
+			conn += c
+			expected.Add(dirs[c])
+		}
 
-	pipelines, startLocation := ParseInput(input)
+		pipe := NewPipe(center, conn)
+		neejbers := pipe.NeejberLocs()
+		actual := set.New(neejbers...)
 
-	assertPipelines(t, 1, pipelines)
-	assertLocation(t, "startLocation", UNKNOWN_STARTLOCATION, startLocation)
-}
+		if actual.Subtract(expected).Len() > 0 || expected.Subtract(actual).Len() > 0 {
+			t.Fatalf("expected %v to have %v neejbers, got %v", pipe, expected, actual)
+		}
+	})
 
-func Test100_ParseInput_DisjointPipeLines(t *testing.T) {
-	input := []string{"-JL-"}
-
-	pipelines, startLocation := ParseInput(input)
-
-	assertPipelines(t, 2, pipelines)
-	assertLocation(t, "startLocation", UNKNOWN_STARTLOCATION, startLocation)
-}
-
-func Test100_ParseInput__StartLocation(t *testing.T) {
-	input := []string{"S"}
-
-	pipelines, startLocation := ParseInput(input)
-
-	assertPipelines(t, 0, pipelines)
-	assertLocation(t, "startLocation", location.New(0, 0), startLocation)
 }

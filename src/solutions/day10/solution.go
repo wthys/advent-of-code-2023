@@ -22,45 +22,24 @@ func (s solution) Day() string {
 }
 
 func (s solution) Part1(input []string) (string, error) {
-	pipelines, startLocation := ParseInput(input)
+	area, startLocation := ParseInput(input)
 
-	areaMap := map[int]PipeLine{}
-	area := grid.WithDefault[int](0)
-
-	for n, pipeline := range pipelines {
-		areaMap[n+1] = pipeline
-		pipeline.ForEach(func(pipe Pipe) {
-			area.Set(pipe.pos, n+1)
-		})
+	mainLoop, err := findMainLoop(area, startLocation)
+	if err != nil {
+		return solver.Error(err)
 	}
 
-	relevantLines := []PipeLine{}
-	for _, pipeline := range pipelines {
-		pipe := NewPipe(startLocation, NORTH+EAST+SOUTH+WEST)
-		merged, ok := pipeline.Connect(pipe)
-		if !ok {
-			continue
-		}
-		relevantLines = append(relevantLines, merged)
-	}
-
-	return solver.Solved(relevantLines[0].Len() / 2)
+	return solver.Solved(mainLoop.Len() / 2)
 }
 
 func (s solution) Part2(input []string) (string, error) {
-	pipelines, startLocation := ParseInput(input)
+	pipearea, startLocation := ParseInput(input)
 
-	relevantLines := []PipeLine{}
-	for _, pipeline := range pipelines {
-		pipe := NewPipe(startLocation, NORTH+EAST+SOUTH+WEST)
-		merged, ok := pipeline.Connect(pipe)
-		if !ok {
-			continue
-		}
-		relevantLines = append(relevantLines, merged)
+	mainLoop, err := findMainLoop(pipearea, startLocation)
+	if err != nil {
+		return solver.Error(err)
 	}
 
-	mainLoop := relevantLines[0]
 	area := grid.WithDefault(false)
 	east := location.New(1, 0)
 	south := location.New(0, 1)
@@ -166,6 +145,54 @@ type (
 		tail  Pipe
 	}
 )
+
+func findMainLoop(area *grid.Grid[Pipe], startLocation location.Location) (PipeLine, error) {
+	start := NewPipe(startLocation, NORTH+SOUTH+EAST+WEST)
+	checkedLocs := set.New[location.Location]()
+	for _, neejber := range startLocation.OrthoNeejbers() {
+		if checkedLocs.Has(neejber) {
+			continue
+		}
+
+		pipeline := NewPipeLine(start)
+		pipelineSet := set.New[location.Location](startLocation)
+		current := neejber
+
+		for true {
+			if checkedLocs.Has(current) {
+				break
+			}
+			pipe, _ := area.Get(current)
+			pl, ok := pipeline.Connect(pipe)
+			if !ok {
+				break
+			}
+			pipeline = pl
+			pipelineSet.Add(current)
+			checkedLocs.Add(current)
+
+			nbrs := pipe.NeejberLocs()
+			found := false
+			for _, nbr := range nbrs {
+				if pipelineSet.Has(nbr) {
+					continue
+				}
+				current = nbr
+				found = true
+				break
+			}
+			if !found {
+				break
+			}
+		}
+
+		if pipeline.IsLoop() {
+			return pipeline, nil
+		}
+	}
+
+	return PipeLine{}, fmt.Errorf("could not find a looping pipeline")
+}
 
 func (con Connection) Connections() []Connection {
 	conns := []Connection{}
@@ -281,6 +308,18 @@ func (pl PipeLine) HasFunc(hasFunc func(pipe Pipe) bool) bool {
 	return false
 }
 
+func (pipe Pipe) NeejberLocs() []location.Location {
+	neejbers := []location.Location{}
+	for _, conn := range pipe.connections.Connections() {
+		loc, ok := conn2loc[conn]
+		if !ok {
+			continue
+		}
+		neejbers = append(neejbers, pipe.pos.Add(loc))
+	}
+	return neejbers
+}
+
 func (con Connection) IsConnected() bool {
 	return (con & (NORTH + SOUTH + EAST + WEST)) > 0
 }
@@ -290,6 +329,12 @@ var loc2conn = map[location.Location]Connection{
 	location.New(1, 0):  EAST,
 	location.New(0, -1): NORTH,
 	location.New(0, 1):  SOUTH,
+}
+var conn2loc = map[Connection]location.Location{
+	WEST:  location.New(-1, 0),
+	EAST:  location.New(1, 0),
+	NORTH: location.New(0, -1),
+	SOUTH: location.New(0, 1),
 }
 
 func (this Pipe) FindConnection(that Pipe) Connection {
@@ -364,9 +409,11 @@ func (pipe Pipe) String() string {
 	return fmt.Sprintf("Pipe(%v %v)", pipe.pos, pipe.connections)
 }
 
-func ParseInput(input []string) ([]PipeLine, location.Location) {
-	pipelines := []PipeLine{}
+func ParseInput(input []string) (*grid.Grid[Pipe], location.Location) {
 	startLocation := location.New(-1, -1)
+	area := grid.WithDefaultFunc[Pipe](func(loc location.Location) (Pipe, error) {
+		return NewPipe(loc, NONE), nil
+	})
 
 	for y, line := range input {
 		if len(line) == 0 {
@@ -383,20 +430,9 @@ func ParseInput(input []string) ([]PipeLine, location.Location) {
 			if !conn.IsConnected() {
 				continue
 			}
-			pipeline := NewPipeLine(NewPipe(pos, conn))
-			newPLs := []PipeLine{}
-			for _, pl := range pipelines {
-				m, ok := pl.Merge(pipeline)
-				if ok {
-					pipeline = m
-				} else {
-					newPLs = append(newPLs, pl)
-				}
-			}
-			newPLs = append(newPLs, pipeline)
-			pipelines = newPLs
+			area.Set(pos, NewPipe(pos, conn))
 		}
 	}
 
-	return pipelines, startLocation
+	return area, startLocation
 }
