@@ -136,6 +136,15 @@ func (g *Grid[T]) Len() int {
 }
 
 func (g *Grid[T]) Print() {
+	g.PrintFunc(func(val T, err error) string {
+		if err != nil {
+			return "."
+		}
+		return fmt.Sprint(val)
+	})
+}
+
+func (g *Grid[T]) PrintFunc(stringer func(T, error) string) {
 	bounds, err := g.Bounds()
 
 	if err != nil {
@@ -147,17 +156,13 @@ func (g *Grid[T]) Print() {
 		for x := bounds.Xmin; x <= bounds.Xmax; x++ {
 			pos := location.New(x, y)
 			val, err := g.Get(pos)
-			if err != nil {
-				fmt.Print(".")
-				continue
-			}
-			fmt.Print(val)
+			fmt.Print(stringer(val, err))
 		}
 		fmt.Println()
 	}
 }
 
-func (b *Bounds) Contains(loc location.Location) bool {
+func (b *Bounds) Has(loc location.Location) bool {
 	return loc.X >= b.Xmin && loc.X <= b.Xmax && loc.Y >= b.Ymin && loc.Y <= b.Ymax
 }
 
