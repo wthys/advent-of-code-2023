@@ -86,14 +86,13 @@ func (s solution) Part2(input []string) (string, error) {
 		if ok {
 			period := i - lru
 			likelyIdx := (limit-i)%period + lru - 1
-			fmt.Printf("prelude=%v, period=%v\n", lru-1, period)
 			return solver.Solved(loadCache[likelyIdx])
 		}
 		lruCache[hash] = i
 		loadCache[i] = loadCalc(platform)
 	}
 
-	return solver.Error(fmt.Errorf(""))
+	return solver.Error(fmt.Errorf("Could not find a period (I'm sorry)"))
 }
 
 const (
