@@ -31,7 +31,7 @@ run: build-run $(PROG)
 	@$(PROG) input $(DAY) | $(DOCKERRUN) $(DAY)
 
 run-bare: $(PROG)
-	@$(PROG) input $(DAY) | $(PROG) run $(DAY)
+	@$(PROG) input $(DAY) | $(PROG) run ${AOC_RUNOPTS} $(ELAPSEDOPTS) $(DAY)
 
 run-all: $(PROG)
 	@if test "$(NOWDATE)" -lt "$(ENDDATE)"; then for day in `seq $(NOWDAY)`; do $(PROG) input $$day | $(DOCKERRUN) $$day; done; else for day in `seq 25`; do $(PROG) input $$day | $(DOCKERRUN) $$day;done;fi
@@ -46,7 +46,10 @@ example: $(PROG) build-run
 	@cat examples/day$(DAY).txt | $(DOCKERRUN) $(DAY)
 
 example-bare: $(PROG)
-	@cat examples/day$(DAY).txt | $(PROG) run $(DAY)
+	@cat examples/day$(DAY).txt | $(PROG) run ${AOC_RUNOPTS} $(ELAPSEDOPTS) $(DAY)
 
 diy-run: build-run $(PROG)
-	$(DOCKERRUN) $(DAY)
+	@$(DOCKERRUN) $(DAY)
+
+diy-run-bare: $(PROG)
+	@$(PROG) run ${AOC_RUNOPTS} $(ELAPSEDOPTS) $(DAY)
