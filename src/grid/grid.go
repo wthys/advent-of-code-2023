@@ -174,6 +174,35 @@ func (b Bounds) Height() int {
 	return b.Ymax - b.Ymin + 1
 }
 
+func (b Bounds) Accomodate(loc location.Location) Bounds {
+	newb := b
+	newb.Xmin = min(b.Xmin, loc.X)
+	newb.Xmax = max(b.Xmax, loc.X)
+	newb.Ymin = min(b.Ymin, loc.Y)
+	newb.Ymax = max(b.Ymax, loc.Y)
+	return newb
+}
+
+func BoundsFromLocation(loc location.Location) Bounds {
+	b := Bounds{}
+	b.Xmin = loc.X
+	b.Xmax = loc.X
+	b.Ymin = loc.Y
+	b.Ymax = loc.Y
+	return b
+}
+
+func BoundsFromSlice(locations []location.Location) Bounds {
+	if len(locations) == 0 {
+		return Bounds{}
+	}
+	b := BoundsFromLocation(locations[0])
+	for _, loc := range locations {
+		b = b.Accomodate(loc)
+	}
+	return b
+}
+
 func (b Bounds) ForEach(forEach func(loc location.Location)) {
 	for y := b.Ymin; y <= b.Ymax; y++ {
 		for x := b.Xmin; x <= b.Xmax; x++ {
